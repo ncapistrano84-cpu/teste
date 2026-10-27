@@ -22,7 +22,7 @@ STN = {"p": "Pendente", "c": "Concluído", "d": "Dúvida", "e": "Erro"}
 MC = {"remessas": "Remessas e peritos", "extincao": "Extinção – arquivamento",
       "abandono": "Intimar sob pena de abandono", "arqsembaixa": "Arquivar sem baixa"}
 SS = {"pendente": "Aguardando", "analise": "Em análise", "assinada": "Assinada"}
-ST2 = {"merito": "Mérito", "extincao": "Extinção"}
+ST2 = {"merito": "Mérito", "extincao": "Extinção", "embargos": "Embargos"}
 
 
 def carregar(pasta, colecao):
@@ -107,9 +107,9 @@ def main(pasta, saida):
     pm = {}
     for x in sents:
         if x.get("status") == "assinada" and x.get("statusEm"):
-            r = pm.setdefault(x["statusEm"][:7], [0, 0])
-            r[1 if x.get("tipo") == "extincao" else 0] += 1
-    sen_m = [["Mês", "Mérito", "Extinção", "Total"]] + [[k[5:] + "/" + k[:4], v[0], v[1], v[0] + v[1]] for k, v in sorted(pm.items(), reverse=True)]
+            r = pm.setdefault(x["statusEm"][:7], [0, 0, 0])
+            r[{"extincao": 1, "embargos": 2}.get(x.get("tipo"), 0)] += 1
+    sen_m = [["Mês", "Mérito", "Extinção", "Embargos", "Total"]] + [[k[5:] + "/" + k[:4], v[0], v[1], v[2], sum(v)] for k, v in sorted(pm.items(), reverse=True)]
 
     mov = [["Nº do processo", "Descrição", "Sistema", "Finalidade", "Motivo", "Último andamento", "Prazo (dias)", "Data de averiguação",
             "Situação", "Observação", "Responsável", "Status", "Concluído em", "Concluído por", "Cadastrado por", "Cadastrado em"]] + [
