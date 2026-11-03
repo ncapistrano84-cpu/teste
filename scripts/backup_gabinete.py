@@ -20,7 +20,8 @@ from openpyxl.utils import get_column_letter
 
 STN = {"p": "Pendente", "c": "Concluído", "d": "Dúvida", "e": "Erro"}
 MC = {"remessas": "Remessas e peritos", "extincao": "Extinção – arquivamento",
-      "abandono": "Intimar sob pena de abandono", "arqsembaixa": "Arquivar sem baixa"}
+      "abandono": "Intimar sob pena de abandono", "arqsembaixa": "Arquivar sem baixa",
+      "mandado": "Mandado de pagamento", "rpv": "RPV/precatório"}
 SS = {"pendente": "Aguardando", "analise": "Em análise", "assinada": "Assinada"}
 ST2 = {"merito": "Mérito", "extincao": "Extinção", "embargos": "Embargos"}
 
