@@ -5,7 +5,7 @@ Uso:
 
 <pasta_com_dados> é a pasta onde a ferramenta ArtifactData salvou os documentos
 (out_dir), com uma subpasta por coleção: gab_lotes/, gab_notas/, gab_sentencas/,
-gab_mov/ e gab_config/equipe.json. Cada arquivo .json contém os campos do
+gab_mov/, gab_aud/ (audiências) e gab_config/equipe.json. Cada arquivo .json contém os campos do
 documento; o id é o nome do arquivo.
 """
 import datetime
@@ -24,6 +24,7 @@ MC = {"remessas": "Remessas e peritos", "extincao": "Extinção – arquivamento
       "mandado": "Mandado de pagamento", "rpv": "RPV/precatório"}
 SS = {"pendente": "Aguardando", "analise": "Em análise", "assinada": "Assinada"}
 ST2 = {"merito": "Mérito", "extincao": "Extinção", "embargos": "Embargos"}
+AT = {"instrucao": "Instrução", "conciliacao": "Conciliação", "outras": "Outras"}
 
 
 def carregar(pasta, colecao):
@@ -60,6 +61,7 @@ def main(pasta, saida):
     notas = sorted(carregar(pasta, "gab_notas"), key=lambda n: n.get("criadoEm") or "")
     sents = sorted(carregar(pasta, "gab_sentencas"), key=lambda s: s.get("conclusao") or "")
     movs = carregar(pasta, "gab_mov")
+    auds = sorted(carregar(pasta, "gab_aud"), key=lambda a: a.get("conclusao") or "")
     eq_path = os.path.join(pasta, "gab_config", "equipe.json")
     equipe = []
     if os.path.exists(eq_path):
@@ -119,6 +121,15 @@ def main(pasta, saida):
          m.get("obs", ""), m.get("responsavel", ""), "Concluído/Arquivado" if m.get("status") == "concluido" else "Em movimentação",
          data_br(m.get("concluidoEm")), m.get("concluidoPor", ""), m.get("cadastradoPor", ""), data_br(m.get("cadastradoEm"))]
         for m in movs]
+    def aud_tipo(a):
+        t = AT.get(a.get("tipo"), a.get("tipo") or "")
+        return t + (" — " + a["tipoOutro"] if a.get("tipo") == "outras" and a.get("tipoOutro") else "")
+    aud = [["Nº do processo", "Sistema", "Tipo de audiência", "Data da conclusão", "Situação", "Data da audiência", "Horário",
+            "Confirmado por", "Confirmado em", "Cadastrado por", "Cadastrado em", "Observação"]] + [
+        [a.get("n", ""), a.get("sistema", ""), aud_tipo(a), data_br(a.get("conclusao")),
+         "Designada" if a.get("status") == "concluido" else "Para designar", data_br(a.get("dataAud")), a.get("horaAud", ""),
+         a.get("concluidoPor", ""), data_br(a.get("concluidoEm")), a.get("cadastradoPor", ""), data_br(a.get("cadastradoEm")), a.get("obs", "")]
+        for a in auds]
     con = [["Data", "Autor", "Mencionados", "Mensagem", "Resposta à mensagem (id)", "Serviço", "Processo", "Lida por", "Id"]] + [
         [data_br(n.get("criadoEm")), n.get("autor", ""), ", ".join(n.get("mencoes") or []), n.get("texto", ""), n.get("thread") or "",
          n.get("loteDesc") or "", n.get("processo") or "", ", ".join((n.get("lidos") or {}).keys()), n["id"]] for n in notas]
@@ -129,6 +140,8 @@ def main(pasta, saida):
            ["Processos distribuídos (ativos)", tot["t"]], ["Concluídos", tot["c"]], ["Pendentes", tot["p"]], ["Com dúvida", tot["d"]], ["Com erro", tot["e"]],
            ["Sentenças aguardando", sum(1 for x in sents if x.get("status") == "pendente")], ["Sentenças em análise", sum(1 for x in sents if x.get("status") == "analise")],
            ["Sentenças assinadas", sum(1 for x in sents if x.get("status") == "assinada")],
+           ["Audiências – para designar", sum(1 for a in auds if a.get("status") != "concluido")],
+           ["Audiências – designadas", sum(1 for a in auds if a.get("status") == "concluido")],
            ["Movimentação – em andamento", sum(1 for m in movs if m.get("status") != "concluido")], ["Movimentação – concluídos/arquivados", sum(1 for m in movs if m.get("status") == "concluido")],
            ["Mensagens (conversas)", len(notas)], ["Pessoas na equipe", len(equipe)]]
 
@@ -137,7 +150,7 @@ def main(pasta, saida):
     cab = Font(bold=True, color="FFFFFF")
     fundo = PatternFill("solid", fgColor="4A6B5D")
     for nome, rows in [("Resumo", res), ("Processos distribuídos", proc), ("Serviços", serv), ("Por executor", exe), ("Sentenças", sen),
-                       ("Sentenças por mês", sen_m), ("Movimentação", mov), ("Conversas", con), ("Equipe", eq)]:
+                       ("Sentenças por mês", sen_m), ("Audiências", aud), ("Movimentação", mov), ("Conversas", con), ("Equipe", eq)]:
         ws = wb.create_sheet(nome)
         for r in rows:
             ws.append(r)
@@ -151,7 +164,7 @@ def main(pasta, saida):
             larg = max(len(str(r[i])) if i < len(r) and r[i] is not None else 0 for r in rows[:300]) + 2
             ws.column_dimensions[get_column_letter(i + 1)].width = min(60, max(10, larg))
     wb.save(saida)
-    print(f"Backup salvo em {saida}: {len(lotes)} serviços, {tot['t']} processos ativos, {len(sents)} sentenças, {len(movs)} movimentações, {len(notas)} mensagens.")
+    print(f"Backup salvo em {saida}: {len(lotes)} serviços, {tot['t']} processos ativos, {len(sents)} sentenças, {len(auds)} audiências, {len(movs)} movimentações, {len(notas)} mensagens.")
 
 
 if __name__ == "__main__":
