@@ -114,13 +114,18 @@ def main(pasta, saida):
             r[{"extincao": 1, "embargos": 2}.get(x.get("tipo"), 0)] += 1
     sen_m = [["Mês", "Mérito", "Extinção", "Embargos", "Total"]] + [[k[5:] + "/" + k[:4], v[0], v[1], v[2], sum(v)] for k, v in sorted(pm.items(), reverse=True)]
 
-    mov = [["Nº do processo", "Descrição", "Sistema", "Finalidade", "Motivo", "Último andamento", "Prazo (dias)", "Data de averiguação",
+    conc_sent = {x["id"]: x.get("conclusao") for x in sents}
+
+    def mov_conc(m):
+        return m.get("conclusao") or conc_sent.get(m.get("origemSentenca") or "", "") or ""
+
+    mov = [["Nº do processo", "Descrição", "Sistema", "Finalidade", "Data da conclusão", "Motivo", "Último andamento", "Prazo (dias)", "Data de averiguação",
             "Situação", "Observação", "Responsável", "Status", "Concluído em", "Concluído por", "Cadastrado por", "Cadastrado em"]] + [
-        [m.get("n", ""), m.get("info", ""), m.get("sistema", ""), MC.get(m.get("categoria"), "Não informada"), m.get("motivo", ""),
+        [m.get("n", ""), m.get("info", ""), m.get("sistema", ""), MC.get(m.get("categoria"), "Não informada"), data_br(mov_conc(m)), m.get("motivo", ""),
          data_br(m.get("ultimo")), "" if m.get("prazo") is None else m.get("prazo"), data_br(m.get("averiguacao")), m.get("situacao", ""),
          m.get("obs", ""), m.get("responsavel", ""), "Concluído/Arquivado" if m.get("status") == "concluido" else "Em movimentação",
          data_br(m.get("concluidoEm")), m.get("concluidoPor", ""), m.get("cadastradoPor", ""), data_br(m.get("cadastradoEm"))]
-        for m in movs]
+        for m in sorted(movs, key=lambda m: (mov_conc(m) or "9999", m.get("n", "")))]
     def aud_tipo(a):
         t = AT.get(a.get("tipo"), a.get("tipo") or "")
         return t + (" — " + a["tipoOutro"] if a.get("tipo") == "outras" and a.get("tipoOutro") else "")
