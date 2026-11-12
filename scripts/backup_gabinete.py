@@ -25,6 +25,12 @@ MC = {"remessas": "Remessas e peritos", "extincao": "Extinção – arquivamento
 SS = {"pendente": "Aguardando", "analise": "Em análise", "assinada": "Assinada"}
 ST2 = {"merito": "Mérito", "extincao": "Extinção", "embargos": "Embargos"}
 AT = {"instrucao": "Instrução", "conciliacao": "Conciliação", "outras": "Outras"}
+VALX = {"mandado": "Mandado de pagamento", "rpv": "RPV", "precatorio": "Precatório"}
+
+
+def valor_texto(x):
+    feitos = x.get("expedidos") or []
+    return ", ".join(VALX[k] + (" (expedido)" if k in feitos else "") for k in (x.get("expedir") or []) if k in VALX)
 
 
 def carregar(pasta, colecao):
@@ -102,9 +108,9 @@ def main(pasta, saida):
         [n, grupo.get(n, ""), r["t"], r["c"], r["p"], r["d"], r["e"], round(r["c"] / r["t"] * 100, 1) if r["t"] else 0]
         for n, r in por_ex.items()]
 
-    sen = [["Nº do processo", "Sistema", "Tipo", "Data da conclusão", "Situação", "Assinada/analisada em", "Por", "Cadastrado por",
+    sen = [["Nº do processo", "Sistema", "Tipo", "Valor a expedir", "Data da conclusão", "Situação", "Assinada/analisada em", "Por", "Cadastrado por",
             "Cadastrado em", "Observação"]] + [
-        [x.get("n", ""), x.get("sistema", ""), ST2.get(x.get("tipo"), ""), data_br(x.get("conclusao")), SS.get(x.get("status"), x.get("status", "")),
+        [x.get("n", ""), x.get("sistema", ""), ST2.get(x.get("tipo"), ""), valor_texto(x), data_br(x.get("conclusao")), SS.get(x.get("status"), x.get("status", "")),
          data_br(x.get("statusEm")), x.get("statusPor", ""), x.get("cadastradoPor", ""), data_br(x.get("cadastradoEm")), x.get("obs", "")]
         for x in sents]
     pm = {}
@@ -119,9 +125,9 @@ def main(pasta, saida):
     def mov_conc(m):
         return m.get("conclusao") or conc_sent.get(m.get("origemSentenca") or "", "") or ""
 
-    mov = [["Nº do processo", "Descrição", "Sistema", "Finalidade", "Data da conclusão", "Motivo", "Último andamento", "Prazo (dias)", "Data de averiguação",
+    mov = [["Nº do processo", "Descrição", "Sistema", "Finalidade", "Valor a expedir", "Data da conclusão", "Motivo", "Último andamento", "Prazo (dias)", "Data de averiguação",
             "Situação", "Observação", "Responsável", "Status", "Concluído em", "Concluído por", "Cadastrado por", "Cadastrado em"]] + [
-        [m.get("n", ""), m.get("info", ""), m.get("sistema", ""), MC.get(m.get("categoria"), "Não informada"), data_br(mov_conc(m)), m.get("motivo", ""),
+        [m.get("n", ""), m.get("info", ""), m.get("sistema", ""), MC.get(m.get("categoria"), "Não informada"), valor_texto(m), data_br(mov_conc(m)), m.get("motivo", ""),
          data_br(m.get("ultimo")), "" if m.get("prazo") is None else m.get("prazo"), data_br(m.get("averiguacao")), m.get("situacao", ""),
          m.get("obs", ""), m.get("responsavel", ""), "Concluído/Arquivado" if m.get("status") == "concluido" else "Em movimentação",
          data_br(m.get("concluidoEm")), m.get("concluidoPor", ""), m.get("cadastradoPor", ""), data_br(m.get("cadastradoEm"))]
